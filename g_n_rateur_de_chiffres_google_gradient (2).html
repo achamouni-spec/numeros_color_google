@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DigitGradient Pro - Éditeur Interactif de Dégradés</title>
+    <!-- Tailwind CSS pour un rendu haut de gamme et responsive -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Polices Google Fonts pour un style moderne et épuré -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&family=Poppins:wght@700;900&display=swap" rel="stylesheet">
+    <!-- Icônes Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                        display: ['Poppins', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Damier de transparence dynamique */
+        .transparency-grid {
+            background-image: linear-gradient(45deg, #e5e7eb 25%, transparent 25%), 
+                              linear-gradient(-45deg, #e5e7eb 25%, transparent 25%), 
+                              linear-gradient(45deg, transparent 75%, #e5e7eb 75%), 
+                              linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+        }
+        .dark .transparency-grid {
+            background-image: linear-gradient(45deg, #1f2937 25%, transparent 25%), 
+                              linear-gradient(-45deg, #1f2937 25%, transparent 25%), 
+                              linear-gradient(45deg, transparent 75%, #1f2937 75%), 
+                              linear-gradient(-45deg, transparent 75%, #1f2937 75%);
+        }
+
+        /* Style custom pour les inputs de couleur ronds */
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+        input[type="color"]::-webkit-color-swatch {
+            border: none;
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-full flex flex-col transition-colors duration-200">
+
+    <!-- En-tête -->
+    <header class="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="flex space-x-1">
+                    <span class="w-3.5 h-3.5 rounded-full bg-[#4285F4]"></span>
+                    <span class="w-3.5 h-3.5 rounded-full bg-[#EA4335]"></span>
+                    <span class="w-3.5 h-3.5 rounded-full bg-[#FBBC05]"></span>
+                    <span class="w-3.5 h-3.5 rounded-full bg-[#34A853]"></span>
+                </div>
+                <span class="font-display font-black text-2xl tracking-tight bg-gradient-to-r from-[#4285F4] via-[#EA4335] to-[#34A853] bg-clip-text text-transparent">
+                    DigitGradient Studio
+                </span>
+            </div>
+            
+            <!-- Bouton Thème Sombre / Clair -->
+            <button id="themeToggle" class="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Changer de thème">
+                <i data-lucide="sun" class="w-5 h-5 hidden dark:block text-yellow-400"></i>
+                <i data-lucide="moon" class="w-5 h-5 block dark:hidden text-slate-600"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Zone de travail principale -->
+    <main class="flex-grow max-w-6xl w-full mx-auto px-4 py-8 flex flex-col lg:flex-row gap-8 items-start justify-center">
+        
+        <!-- Panneau de configuration (Gauche) -->
+        <div class="w-full lg:w-5/12 space-y-5 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-700/50">
+            <div>
+                <h2 class="text-xl font-bold font-display flex items-center gap-2">
+                    <i data-lucide="sliders" class="text-[#4285F4] w-5 h-5"></i>
+                    Personnalisation
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Configurez les couleurs ou faites-les glisser directement sur la forme à droite !</p>
+            </div>
+
+            <!-- Input du nombre principal -->
+            <div class="space-y-2">
+                <label for="numberInput" class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Chiffre ou nombre</label>
+                <div class="flex items-center space-x-2">
+                    <button id="btnMinus" class="p-3 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl transition-all" title="Diminuer">
+                        <i data-lucide="minus-circle" class="w-5 h-5 text-slate-600 dark:text-slate-300"></i>
+                    </button>
+                    <input type="number" id="numberInput" value="1" min="0" max="9999" class="w-full text-center text-3xl font-black p-2 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-xl focus:border-[#4285F4] focus:ring-2 focus:ring-[#4285F4]/20 focus:outline-none transition-all">
+                    <button id="btnPlus" class="p-3 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl transition-all" title="Augmenter">
+                        <i data-lucide="plus-circle" class="w-5 h-5 text-slate-600 dark:text-slate-300"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sélection de la police -->
+            <div class="space-y-1.5">
+                <label for="fontSelect" class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Style d'écriture (Police)</label>
+                <select id="fontSelect" class="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:border-[#4285F4] font-medium">
+                    <option value="'Poppins', sans-serif" selected>Poppins (Épais & Moderne)</option>
+                    <option value="'Outfit', sans-serif">Outfit (Rond & Minimaliste)</option>
+                    <option value="'Arial Black', sans-serif">Arial Black (Tracé Ultra-Massif)</option>
+                    <option value="'Georgia', serif">Georgia (Élégant avec Empattements)</option>
+                </select>
+            </div>
+
+            <!-- Interactivité directe sur la forme -->
+            <div class="p-4 bg-blue-50/50 dark:bg-slate-900/50 rounded-xl border border-blue-100 dark:border-slate-700 space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold uppercase tracking-wider text-[#4285F4] flex items-center gap-1.5">
+                        <i data-lucide="pointer" class="w-4 h-4"></i>
+                        Édition directe activée
+                    </span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="toggleHandles" class="sr-only peer" checked>
+                        <div class="w-9 h-5 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#34A853]"></div>
+                    </label>
+                </div>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Faites glisser la **flèche en pointillés** pour orienter le dégradé. Déplacez les **poignées colorées** le long de cette ligne pour doser la transition de chaque couleur !
+                </p>
+            </div>
+
+            <!-- SECTION COULEURS PERSONNALISÉES -->
+            <div class="pt-4 border-t border-slate-100 dark:border-slate-700/50 space-y-3">
+                <div class="flex items-center justify-between">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Choix des couleurs</label>
+                    <button id="btnResetColors" class="text-xs font-semibold text-[#4285F4] hover:text-[#1557b0] dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 transition-colors" title="Réinitialiser aux couleurs Google">
+                        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                        Google original
+                    </button>
+                </div>
+
+                <!-- Grille des sélecteurs de couleur -->
+                <div class="grid grid-cols-4 gap-2">
+                    <div class="flex flex-col items-center p-2 rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+                        <input type="color" id="colorPicker1" value="#4285F4" class="w-9 h-9 cursor-pointer rounded-full border border-slate-200 dark:border-slate-700 shadow-sm transition-transform hover:scale-110">
+                        <span class="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mt-1">Bleu</span>
+                    </div>
+                    <div class="flex flex-col items-center p-2 rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+                        <input type="color" id="colorPicker2" value="#EA4335" class="w-9 h-9 cursor-pointer rounded-full border border-slate-200 dark:border-slate-700 shadow-sm transition-transform hover:scale-110">
+                        <span class="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mt-1">Rouge</span>
+                    </div>
+                    <div class="flex flex-col items-center p-2 rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+                        <input type="color" id="colorPicker3" value="#FBBC05" class="w-9 h-9 cursor-pointer rounded-full border border-slate-200 dark:border-slate-700 shadow-sm transition-transform hover:scale-110">
+                        <span class="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mt-1">Jaune</span>
+                    </div>
+                    <div class="flex flex-col items-center p-2 rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+                        <input type="color" id="colorPicker4" value="#34A853" class="w-9 h-9 cursor-pointer rounded-full border border-slate-200 dark:border-slate-700 shadow-sm transition-transform hover:scale-110">
+                        <span class="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mt-1">Vert</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION : OPTION DU DÉGRADÉ -->
+            <div class="pt-4 border-t border-slate-100 dark:border-slate-700/50 space-y-3">
+                <div class="space-y-1.5">
+                    <label for="gradientType" class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Type de dégradé</label>
+                    <select id="gradientType" class="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:border-[#4285F4] font-medium">
+                        <option value="linear" selected>Dégradé Linéaire</option>
+                        <option value="radial">Dégradé Radial (Circulaire)</option>
+                    </select>
+                </div>
+
+                <!-- Curseur d'angle (Synchronisé avec la rotation de la flèche) -->
+                <div id="angleControlContainer" class="space-y-1.5">
+                    <div class="flex justify-between text-xs font-bold text-slate-500 dark:text-slate-400">
+                        <span class="uppercase tracking-wider">Angle de rotation</span>
+                        <span id="angleValueDisplay" class="font-mono text-[#4285F4] dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-1.5 py-0.5 rounded">45°</span>
+                    </div>
+                    <input type="range" id="gradientAngle" min="0" max="360" value="45" class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[#4285F4]">
+                </div>
+            </div>
+
+            <!-- Options d'arrière-plan -->
+            <div class="pt-4 border-t border-slate-100 dark:border-slate-700/50 space-y-2">
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Arrière-plan de l'image finale</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button type="button" data-bg="transparent" class="bg-btn-option py-2 px-1 rounded-lg text-xs font-bold border-2 border-blue-500 bg-blue-50/50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 transition-all">
+                        Transparent
+                    </button>
+                    <button type="button" data-bg="white" class="bg-btn-option py-2 px-1 rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-700 bg-white text-slate-800 dark:text-slate-200 transition-all">
+                        Blanc
+                    </button>
+                    <button type="button" data-bg="dark" class="bg-btn-option py-2 px-1 rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-700 bg-slate-900 text-white transition-all">
+                        Noir
+                    </button>
+                </div>
+            </div>
+
+            <!-- Bloc de téléchargement -->
+            <div class="pt-5 border-t border-slate-100 dark:border-slate-700/50 space-y-3">
+                <button id="downloadBtn" class="w-full bg-gradient-to-r from-[#4285F4] via-[#EA4335] to-[#34A853] hover:opacity-95 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2 transform active:scale-[0.99]">
+                    <i data-lucide="download" class="w-5 h-5"></i>
+                    <span>Télécharger le PNG</span>
+                </button>
+                <div class="flex items-center justify-center space-x-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                    <i data-lucide="sparkles" class="w-3.5 h-3.5 text-[#FBBC05] animate-pulse"></i>
+                    <span>Incrémentation automatique après chaque téléchargement !</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Zone d'affichage et Aperçu en direct (Droite) -->
+        <div class="w-full lg:w-7/12 flex flex-col items-center justify-center space-y-6 lg:sticky lg:top-24">
+            
+            <!-- Canvas de rendu interactif -->
+            <div class="w-full max-w-[480px] aspect-square rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-700/80 shadow-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center relative select-none">
+                
+                <!-- Fond de transparence (grille de damier) -->
+                <div id="previewBackground" class="absolute inset-0 transparency-grid transition-all duration-300 z-0"></div>
+                
+                <!-- Canvas de rendu haute résolution -->
+                <canvas id="numberCanvas" width="600" height="600" class="relative z-10 w-full h-full object-contain max-w-full max-h-full cursor-crosshair"></canvas>
+                
+                <!-- Badge d'indicateur d'aperçu dynamique -->
+                <div class="absolute top-4 right-4 bg-black/65 text-white backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold z-20 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-ping"></span>
+                    <span>ÉDITEUR EN DIRECT</span>
+                </div>
+            </div>
+            
+            <div class="text-center space-y-1">
+                <p class="text-xs text-slate-400 dark:text-slate-500 font-semibold tracking-wide">Fichier d'export : PNG Haute Définition (600 × 600 px)</p>
+                <p class="text-[11px] text-slate-400 dark:text-slate-500">Glissez directement les points colorés sur le chiffre pour le calibrer.</p>
+            </div>
+            
+        </div>
+
+    </main>
+
+    <!-- Pied de page -->
+    <footer class="border-t border-slate-200 dark:border-slate-800 py-6 bg-white dark:bg-slate-950 text-center text-xs text-slate-400 dark:text-slate-500">
+        <p>DigitGradient Pro • Éditeur Vectoriel Intuitif</p>
+    </footer>
+
+    <!-- Logique applicative intégrée -->
+    <script>
+        // Initialiser les icônes Lucide
+        lucide.createIcons();
+
+        // Récupération des éléments du DOM
+        const canvas = document.getElementById('numberCanvas');
+        const ctx = canvas.getContext('2d');
+        const numberInput = document.getElementById('numberInput');
+        const fontSelect = document.getElementById('fontSelect');
+        const gradientTypeSelect = document.getElementById('gradientType');
+        const gradientAngleInput = document.getElementById('gradientAngle');
+        const angleValueDisplay = document.getElementById('angleValueDisplay');
+        const toggleHandles = document.getElementById('toggleHandles');
+
+        // Les 4 color pickers
+        const colorPicker1 = document.getElementById('colorPicker1');
+        const colorPicker2 = document.getElementById('colorPicker2');
+        const colorPicker3 = document.getElementById('colorPicker3');
+        const colorPicker4 = document.getElementById('colorPicker4');
+        const btnResetColors = document.getElementById('btnResetColors');
+
+        const downloadBtn = document.getElementById('downloadBtn');
+        const btnMinus = document.getElementById('btnMinus');
+        const btnPlus = document.getElementById('btnPlus');
+        const previewBackground = document.getElementById('previewBackground');
+        const bgOptions = document.querySelectorAll('.bg-btn-option');
+        const themeToggle = document.getElementById('themeToggle');
+
+        // Palette Google Officielle par défaut
+        const googleDefaultColors = ['#4285F4', '#EA4335', '#FBBC05', '#34A853'];
+
+        // État de l'arrière-plan de l'image finale
+        let currentBgType = 'transparent'; // 'transparent' | 'white' | 'dark'
+        let showInteractiveHandles = true;
+
+        // --- ÉTAT DU VECTEUR DE DÉGRADÉ INTERACTIF (Coordonnées dans le canvas de 600x600) ---
+        let handles = {
+            p1: { x: 120, y: 120, color: '#4285F4', label: '1' }, // Départ (Bleu)
+            p2: { x: 240, y: 240, color: '#EA4335', label: '2', t: 0.33 }, // Stop intermédiaire 1 (Rouge)
+            p3: { x: 360, y: 360, color: '#FBBC05', label: '3', t: 0.66 }, // Stop intermédiaire 2 (Jaune)
+            p4: { x: 480, y: 480, color: '#34A853', label: '4' }  // Fin (Vert)
+        };
+
+        // Variables pour la gestion du drag and drop
+        let activeHandle = null;  // Identifiant de la poignée active ('p1', 'p2', 'p3', 'p4')
+        let hoveredHandle = null; // Identifiant de la poignée survolée
+
+        // Recalculer les positions réelles x et y des arrêts de couleur p2 et p3 le long de la ligne p1 -> p4
+        function updateIntermediatePositions() {
+            const dx = handles.p4.x - handles.p1.x;
+            const dy = handles.p4.y - handles.p1.y;
+
+            handles.p2.x = handles.p1.x + handles.p2.t * dx;
+            handles.p2.y = handles.p1.y + handles.p2.t * dy;
+
+            handles.p3.x = handles.p1.x + handles.p3.t * dx;
+            handles.p3.y = handles.p1.y + handles.p3.t * dy;
+        }
+
+        // Mettre à jour l'angle dans le panneau d'options à partir des coordonnées réelles des poignées
+        function updateAngleFromHandles() {
+            const dx = handles.p4.x - handles.p1.x;
+            const dy = handles.p4.y - handles.p1.y;
+            let angleRad = Math.atan2(dy, dx);
+            let angleDeg = Math.round((angleRad * 180) / Math.PI);
+            if (angleDeg < 0) angleDeg += 360;
+
+            gradientAngleInput.value = angleDeg;
+            angleValueDisplay.textContent = `${angleDeg}°`;
+        }
+
+        // Mettre à jour la disposition des poignées à partir du slider d'angle (si modifié manuellement à gauche)
+        function setHandlesFromAngle(angleDeg) {
+            const cx = 300;
+            const cy = 300;
+            const radius = 220; // Distance des points d'ancrage par rapport au centre du canvas
+            const rad = (angleDeg * Math.PI) / 180;
+
+            handles.p1.x = cx - Math.cos(rad) * radius;
+            handles.p1.y = cy - Math.sin(rad) * radius;
+            handles.p4.x = cx + Math.cos(rad) * radius;
+            handles.p4.y = cy + Math.sin(rad) * radius;
+
+            updateIntermediatePositions();
+        }
+
+        // Fonction de dessin principal sur le canvas
+        function drawNumber(isExporting = false) {
+            const val = numberInput.value || "0";
+            const fontName = fontSelect.value;
+            const gradType = gradientTypeSelect.value;
+
+            // Couleurs récupérées en direct des sélecteurs de couleur
+            handles.p1.color = colorPicker1.value;
+            handles.p2.color = colorPicker2.value;
+            handles.p3.color = colorPicker3.value;
+            handles.p4.color = colorPicker4.value;
+
+            const w = canvas.width;
+            const h = canvas.height;
+
+            // 1. Nettoyer le canvas
+            ctx.clearRect(0, 0, w, h);
+
+            // 2. Dessiner le fond opaque si sélectionné
+            if (currentBgType === 'white') {
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, w, h);
+            } else if (currentBgType === 'dark') {
+                ctx.fillStyle = '#0f172a'; // Slate 900
+                ctx.fillRect(0, 0, w, h);
+            }
+
+            // 3. Construction du dégradé personnalisé (Linéaire ou Radial)
+            let gradient;
+            if (gradType === 'linear') {
+                gradient = ctx.createLinearGradient(handles.p1.x, handles.p1.y, handles.p4.x, handles.p4.y);
+            } else {
+                // Dégradé Radial basé sur P1 (centre) et la distance de P4 (rayon)
+                const cx = handles.p1.x;
+                const cy = handles.p1.y;
+                const rx = handles.p4.x - cx;
+                const ry = handles.p4.y - cy;
+                const radius = Math.sqrt(rx*rx + ry*ry);
+                gradient = ctx.createRadialGradient(cx, cy, 10, cx, cy, radius > 5 ? radius : 5);
+            }
+
+            // Placement des arrêts de couleurs avec leurs positions t respectives
+            gradient.addColorStop(0, handles.p1.color);
+            gradient.addColorStop(handles.p2.t, handles.p2.color);
+            gradient.addColorStop(handles.p3.t, handles.p3.color);
+            gradient.addColorStop(1, handles.p4.color);
+
+            // Appliquer le style au canvas pour dessiner le chiffre
+            ctx.fillStyle = gradient;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Ajustement dynamique de la taille de la police selon le nombre de caractères
+            let fontSize = 380;
+            if (val.length === 2) fontSize = 285;
+            if (val.length === 3) fontSize = 195;
+            if (val.length >= 4) fontSize = 140;
+
+            ctx.font = `900 ${fontSize}px ${fontName}`;
+            
+            // Écriture du chiffre au centre exact
+            ctx.fillText(val, w / 2, h / 2 + (fontSize * 0.05));
+
+            // 4. Dessiner la superposition des flèches/contrôles uniquement si activé et non en cours d'exportation
+            if (showInteractiveHandles && !isExporting) {
+                drawGradientOverlay();
+            }
+        }
+
+        // Tracé de l'overlay vectoriel (Ligne + Flèche + Cercles de contrôles)
+        function drawGradientOverlay() {
+            const isRadial = (gradientTypeSelect.value === 'radial');
+
+            // Dessiner la ligne de guidage (ou le rayon)
+            ctx.beginPath();
+            ctx.moveTo(handles.p1.x, handles.p1.y);
+            ctx.lineTo(handles.p4.x, handles.p4.y);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.lineWidth = 4;
+            ctx.setLineDash([6, 6]);
+            ctx.stroke();
+            ctx.setLineDash([]); // Réinitialisation du style de ligne
+
+            // Dessiner un contour sombre interne pour créer du contraste sur tous les fonds
+            ctx.beginPath();
+            ctx.moveTo(handles.p1.x, handles.p1.y);
+            ctx.lineTo(handles.p4.x, handles.p4.y);
+            ctx.strokeStyle = 'rgba(15, 23, 42, 0.7)';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // Si dégradé linéaire, dessiner la pointe de la flèche directionnelle sur P4
+            if (!isRadial) {
+                drawArrowhead(handles.p1, handles.p4);
+            } else {
+                // Dessiner un cercle de guidage radial translucide
+                const rx = handles.p4.x - handles.p1.x;
+                const ry = handles.p4.y - handles.p1.y;
+                const radius = Math.sqrt(rx*rx + ry*ry);
+                ctx.beginPath();
+                ctx.arc(handles.p1.x, handles.p1.y, radius, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([4, 4]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // Dessiner les boutons interactifs (poignées)
+            const keys = ['p1', 'p2', 'p3', 'p4'];
+            keys.forEach(key => {
+                const h = handles[key];
+                const isHovered = (hoveredHandle === key);
+                const isActive = (activeHandle === key);
+
+                const radiusSize = isHovered || isActive ? 18 : 14;
+
+                // Dessin de l'ombre portée de la poignée
+                ctx.beginPath();
+                ctx.arc(h.x, h.y, radiusSize, 0, Math.PI * 2);
+                ctx.fillStyle = '#FFFFFF';
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+                ctx.shadowBlur = 8;
+                ctx.fill();
+                ctx.shadowBlur = 0; // Réinitialisation de l'ombre
+
+                // Tracé du centre coloré de la poignée
+                ctx.beginPath();
+                ctx.arc(h.x, h.y, radiusSize - 4, 0, Math.PI * 2);
+                ctx.fillStyle = h.color;
+                ctx.fill();
+
+                // Un bord intérieur blanc transparent pour donner du relief
+                ctx.beginPath();
+                ctx.arc(h.x, h.y, radiusSize - 4, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Ajouter un petit halo de sélection si la poignée est active
+                if (isActive) {
+                    ctx.beginPath();
+                    ctx.arc(h.x, h.y, radiusSize + 4, 0, Math.PI * 2);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            });
+        }
+
+        // Dessiner une tête de flèche vectorielle esthétique
+        function drawArrowhead(from, to) {
+            const angle = Math.atan2(to.y - from.y, to.x - from.x);
+            const size = 18; // Taille de la pointe
+            ctx.beginPath();
+            ctx.moveTo(to.x, to.y);
+            ctx.lineTo(to.x - size * Math.cos(angle - Math.PI / 6), to.y - size * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(to.x - size * Math.cos(angle + Math.PI / 6), to.y - size * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(15, 23, 42, 0.7)';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+        }
+
+        // --- GESTION DU DRAG & DROP DES CONTROLES SUR LE CANVAS ---
+
+        // Convertir les coordonnées écran de la souris en coordonnées internes (600x600) du canvas
+        function getCanvasCoords(e) {
+            const rect = canvas.getBoundingClientRect();
+            // Prise en compte du support tactile (touches)
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+
+        // Détecter si la souris est à proximité d'une poignée de contrôle
+        function findHandleAtCoords(coords) {
+            const threshold = 22; // Distance de détection en pixels
+            const keys = ['p1', 'p2', 'p3', 'p4'];
+            for (let key of keys) {
+                const h = handles[key];
+                const dist = Math.sqrt((coords.x - h.x)**2 + (coords.y - h.y)**2);
+                if (dist <= threshold) {
+                    return key;
+                }
+            }
+            return null;
+        }
+
+        // Événement d'activation (Clic ou Toucher)
+        function handleStart(e) {
+            if (!showInteractiveHandles) return;
+            const coords = getCanvasCoords(e);
+            const handleKey = findHandleAtCoords(coords);
+            if (handleKey) {
+                activeHandle = handleKey;
+                e.preventDefault(); // Empêcher le scroll sur mobile lors du drag
+                drawNumber();
+            }
+        }
+
+        // Événement de déplacement (Glissement)
+        function handleMove(e) {
+            if (!showInteractiveHandles) return;
+            const coords = getCanvasCoords(e);
+
+            if (activeHandle) {
+                e.preventDefault();
+
+                if (activeHandle === 'p1' || activeHandle === 'p4') {
+                    // Déplacement libre pour les ancres de début et fin de dégradé
+                    handles[activeHandle].x = Math.max(10, Math.min(590, coords.x));
+                    handles[activeHandle].y = Math.max(10, Math.min(590, coords.y));
+
+                    // Recalculer les positions relatives des poignées intermédiaires
+                    updateIntermediatePositions();
+                    // Mettre à jour l'angle sur le slider
+                    updateAngleFromHandles();
+                } else {
+                    // Poignées intermédiaires coulissantes (p2 et p3) : Projection sur le vecteur de dégradé p1 -> p4
+                    const dx = handles.p4.x - handles.p1.x;
+                    const dy = handles.p4.y - handles.p1.y;
+                    const L2 = dx*dx + dy*dy;
+
+                    if (L2 > 0) {
+                        // Calcul du ratio de projection "t"
+                        let t = ((coords.x - handles.p1.x) * dx + (coords.y - handles.p1.y) * dy) / L2;
+
+                        // Clamper t pour éviter le croisement de couleurs ou les dépassements
+                        if (activeHandle === 'p2') {
+                            t = Math.max(0.04, Math.min(handles.p3.t - 0.04, t));
+                            handles.p2.t = t;
+                        } else if (activeHandle === 'p3') {
+                            t = Math.max(handles.p2.t + 0.04, Math.min(0.96, t));
+                            handles.p3.t = t;
+                        }
+                    }
+                    updateIntermediatePositions();
+                }
+                drawNumber();
+            } else {
+                // Modification du pointeur au survol
+                const handleKey = findHandleAtCoords(coords);
+                if (handleKey !== hoveredHandle) {
+                    hoveredHandle = handleKey;
+                    canvas.style.cursor = hoveredHandle ? 'pointer' : 'crosshair';
+                    drawNumber();
+                }
+            }
+        }
+
+        // Événement de relâchement (Fin du clic ou du toucher)
+        function handleEnd() {
+            if (activeHandle) {
+                activeHandle = null;
+                drawNumber();
+            }
+        }
+
+        // Liaison des événements de souris sur le Canvas
+        canvas.addEventListener('mousedown', handleStart);
+        canvas.addEventListener('mousemove', handleMove);
+        window.addEventListener('mouseup', handleEnd);
+
+        // Liaison des événements tactiles (mobile & tablette)
+        canvas.addEventListener('touchstart', handleStart, { passive: false });
+        canvas.addEventListener('touchmove', handleMove, { passive: false });
+        window.addEventListener('touchend', handleEnd);
+
+        // --- FIN DES CONTROLES INTERACTIFS ---
+
+        // Écouteur pour modifier le type de dégradé
+        gradientTypeSelect.addEventListener('change', () => {
+            const isRadial = (gradientTypeSelect.value === 'radial');
+            if (isRadial) {
+                angleControlContainer.classList.add('hidden');
+            } else {
+                angleControlContainer.classList.remove('hidden');
+            }
+            drawNumber();
+        });
+
+        // Liaison du slider d'angle
+        gradientAngleInput.addEventListener('input', () => {
+            const angle = parseInt(gradientAngleInput.value, 10);
+            angleValueDisplay.textContent = `${angle}°`;
+            setHandlesFromAngle(angle);
+            drawNumber();
+        });
+
+        // Toggle pour afficher/masquer le système de flèches
+        toggleHandles.addEventListener('change', (e) => {
+            showInteractiveHandles = e.target.checked;
+            drawNumber();
+        });
+
+        // Liaison des sélecteurs de couleur latéraux
+        const colorPickers = [colorPicker1, colorPicker2, colorPicker3, colorPicker4];
+        colorPickers.forEach(picker => {
+            picker.addEventListener('input', drawNumber);
+        });
+
+        // Remettre à zéro aux couleurs Google d'origine
+        btnResetColors.addEventListener('click', () => {
+            colorPicker1.value = googleDefaultColors[0];
+            colorPicker2.value = googleDefaultColors[1];
+            colorPicker3.value = googleDefaultColors[2];
+            colorPicker4.value = googleDefaultColors[3];
+            drawNumber();
+        });
+
+        // Écouteurs globaux de saisie (chiffres et polices)
+        numberInput.addEventListener('input', drawNumber);
+        fontSelect.addEventListener('change', drawNumber);
+
+        // Incrémentation & Décrémentation
+        btnMinus.addEventListener('click', () => {
+            let val = parseInt(numberInput.value, 10);
+            if (isNaN(val)) val = 1;
+            if (val > 0) {
+                numberInput.value = val - 1;
+                drawNumber();
+            }
+        });
+
+        btnPlus.addEventListener('click', () => {
+            let val = parseInt(numberInput.value, 10);
+            if (isNaN(val)) val = 0;
+            numberInput.value = val + 1;
+            drawNumber();
+        });
+
+        // Choix du fond de l'image d'exportation
+        bgOptions.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                bgOptions.forEach(b => {
+                    b.classList.remove('border-blue-500', 'bg-blue-50/50', 'dark:bg-blue-950/30', 'text-blue-600', 'dark:text-blue-400');
+                    b.classList.add('border-slate-200', 'dark:border-slate-700', 'text-slate-800', 'dark:text-slate-200');
+                });
+
+                const target = e.currentTarget;
+                target.classList.remove('border-slate-200', 'dark:border-slate-700', 'text-slate-800', 'dark:text-slate-200');
+                target.classList.add('border-blue-500', 'bg-blue-50/50', 'dark:bg-blue-950/30', 'text-blue-600', 'dark:text-blue-400');
+
+                currentBgType = target.getAttribute('data-bg');
+
+                if (currentBgType === 'transparent') {
+                    previewBackground.className = "absolute inset-0 transparency-grid transition-all duration-300 z-0";
+                } else if (currentBgType === 'white') {
+                    previewBackground.className = "absolute inset-0 bg-white transition-all duration-300 z-0";
+                } else if (currentBgType === 'dark') {
+                    previewBackground.className = "absolute inset-0 bg-slate-950 transition-all duration-300 z-0";
+                }
+
+                drawNumber();
+            });
+        });
+
+        // Téléchargement PNG haute résolution et incrémentation automatique
+        downloadBtn.addEventListener('click', () => {
+            const currentVal = numberInput.value || "1";
+
+            // 1. Redessiner le canvas en masquant explicitement les poignées de guidage
+            drawNumber(true);
+
+            // 2. Extraire l'image du canvas en format PNG
+            const dataURL = canvas.toDataURL('image/png');
+
+            // 3. Restaurer le dessin des poignées à l'écran
+            drawNumber(false);
+
+            // 4. Lancement du téléchargement
+            const link = document.createElement('a');
+            link.download = `chiffre-${currentVal}-gradient.png`;
+            link.href = dataURL;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // 5. Calculer le chiffre suivant
+            let nextVal = parseInt(currentVal, 10);
+            if (isNaN(nextVal)) {
+                nextVal = 1;
+            } else {
+                nextVal += 1;
+            }
+            numberInput.value = nextVal;
+
+            // 6. Animation du canvas
+            canvas.classList.add('scale-95');
+            canvas.style.transition = 'transform 120ms cubic-bezier(0.4, 0, 0.2, 1)';
+            
+            setTimeout(() => {
+                canvas.classList.remove('scale-95');
+                drawNumber();
+            }, 120);
+        });
+
+        // Mode Sombre persistant
+        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+
+        themeToggle.addEventListener('click', () => {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('color-theme', 'light');
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('color-theme', 'dark');
+            }
+        });
+
+        // Premier calcul et affichage à l'ouverture
+        setHandlesFromAngle(45);
+        drawNumber();
+    </script>
+</body>
+</html>
